@@ -93,19 +93,25 @@ const sidebarItem: menu[] = [
   {
     title: "Calendar",
     icon: CalendarIcon,
-    to: "/kalendar",
+    to: "/calendar",
+    external: false,
+  },
+  {
+    title: "RPH",
+    icon: CalendarIcon,
+    to: "/rph",
     external: false,
   },
   {
     title: "Student Listing",
     icon: ListIcon,
-    to: "/data-murid",
+    to: "/students-data",
     external: false,
   },
   {
     title: "Student Absence",
     icon: UserXIcon,
-    to: "/kehadiran-murid",
+    to: "/attendance",
     external: false,
   },
   { header: "Analisis" },
