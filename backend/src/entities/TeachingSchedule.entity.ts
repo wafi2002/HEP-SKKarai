@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index, OneToOne, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index, OneToOne, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Teacher } from './Teacher.entity';
 import { Class } from './Class.entity';
+import { RPH } from './RPH.entity';
 
 export enum DayOfWeek {
     MONDAY = 'Monday',
@@ -53,5 +54,8 @@ export class TeachingSchedule {
 
     @Column({ nullable: true })
     updated_by: string;
+
+    @OneToMany(() => RPH, rph => rph.teachingSchedule)
+    rph: RPH[];
     
 }
