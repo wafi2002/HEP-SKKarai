@@ -7,6 +7,12 @@ import { Repository } from 'typeorm';
 import { Class } from 'src/entities/Class.entity';
 import { StudentAcademic } from 'src/entities/StudentAcademic.entity';
 import { AttendanceSession } from 'src/entities/AttendanceSession';
+import { Student } from 'src/entities/Student.entity';
+import * as ExcelJS from 'exceljs'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 @Injectable()
 export class AttendanceService {
@@ -22,7 +28,120 @@ export class AttendanceService {
 
     @InjectRepository(Class)
     private classRepository: Repository<Class>,
+
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
   ){}
+
+  async exportExcel(payload: any) {
+    const { class_ID, date_from, date_to } = payload
+
+    // 1️⃣ Get students
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .innerJoin(
+        'student_academics',
+        'academic',
+        'academic.student_ID = student.student_ID AND academic.class_ID = :class_ID',
+        { class_ID },
+      )
+      .innerJoin(
+        'academic.class',
+        'class'
+      )
+      .addSelect([
+        'class.academic_year_level',
+        'class.class_name',
+      ])
+      .getRawMany()
+
+    // 2️⃣ Get absences
+    const absences = await this.attendanceRepository
+      .createQueryBuilder('attendance')
+      .where('attendance.class_ID = :class_ID', { class_ID })
+      .andWhere('attendance.date BETWEEN :from AND :to', {
+        from: date_from,
+        to: date_to,
+      })
+      .getMany()
+
+    // 3️⃣ Convert absences → Map by (date + student_ID)
+    const absenceMap = new Map()
+
+    absences.forEach(a => {
+      const formattedDate = new Date(a.date).toISOString().substring(0, 10)
+      const key = `${formattedDate}_${a.student.student_ID}`
+      absenceMap.set(key, a)
+    })
+
+    // 4️⃣ Generate date range
+    const dates: string[] = []
+    let current = new Date(date_from)
+    const end = new Date(date_to)
+
+    while (current <= end) {
+      dates.push(current.toISOString().substring(0, 10))
+      current.setDate(current.getDate() + 1)
+    }
+
+    // 5️⃣ Create workbook
+    const workbook = new ExcelJS.Workbook()
+
+    // 6️⃣ Loop each date → create sheet
+    for (const date of dates) {
+      const sheet = workbook.addWorksheet(date)
+
+      // Header
+      sheet.addRow(['Name', 'IC', 'Student ID', 'Students Class', 'Attendance Status', 'Reason'])
+
+      // Fill rows
+      students.forEach(student => {
+        const key = `${date}_${student.student_student_ID}`
+        const absence = absenceMap.get(key)
+
+        const className =
+          student.class_academic_year_level + ' ' + student.class_class_name
+
+        if (absence) {
+          sheet.addRow([
+            student.student_name,
+            student.student_ic,
+            student.student_student_ID,
+            className,
+            'Absent',
+            absence.reason || '-',
+          ])
+        } else {
+          sheet.addRow([
+            student.student_name,
+            student.student_ic,
+            student.student_student_ID,
+            className,
+            'Present',
+            '-',
+          ])
+        }
+      })
+    }
+
+    // 7️⃣ Save file
+    const fileName = `attendance_${Date.now()}.xlsx`
+    const uploadDir = path.join(__dirname, '../../../uploads')
+
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
+    }
+
+    const filePath = path.join(uploadDir, fileName)
+    await workbook.xlsx.writeFile(filePath)
+
+    console.debug('[EXPORT EXCEL] download_url:', `${process.env.BASE_URL}/uploads/${fileName}`)
+
+    // 8️⃣ Return URL
+    return {
+      download_url: `${process.env.BASE_URL}/uploads/${fileName}`
+    }
+  }
   
   async create(dto: CreateAttendanceDto, teacherId: string) {
     const classEntity = await this.classRepository.findOne({

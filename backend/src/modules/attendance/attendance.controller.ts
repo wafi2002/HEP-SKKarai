@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request  } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, HttpStatus, HttpCode, UseInterceptors  } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
@@ -14,6 +15,24 @@ export class AttendanceController {
     const teacherId = req.user.teacherId;
     console.log(teacherId);
     return this.AttendanceService.create(createAttendanceDto, teacherId);
+  }
+
+  /**
+   * Export attendace data to excel
+   * POST /attendace/export
+   * Content-Type: multipart/form-data
+   * Body: file (data)
+   */
+  @Post('export')
+  @HttpCode(HttpStatus.OK)
+  async exportExcel(@Body() body: any) {
+    const fileUrl = await this.AttendanceService.exportExcel(body)
+
+    return {
+      data: {
+        download_url: fileUrl,
+      },
+    }
   }
 
   @Get()

@@ -42,6 +42,12 @@ interface AttendanceRecord {
   };
 }
 
+interface ExportResult {
+  download_url: string;
+  message: string;
+  status: string;
+}
+
 const reasonOptions = ['Sick', 'Absent Without Reason', 'Family Matter', 'Natural Disaster', 'Other'];
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -49,6 +55,11 @@ const selectedClassId = ref<string | null>(null);
 const attendanceDate = ref<string>(new Date().toISOString().substring(0, 10));
 const absentList = ref<AbsentRecord[]>([]);
 const isSubmitting = ref(false);
+const exportDialog = ref(false);
+const isExporting = ref(false);
+const exportClassId = ref<string | null>(null)
+const exportDateFrom = ref<string>(new Date().toISOString().substring(0, 10))
+const exportDateTo = ref<string>(new Date().toISOString().substring(0, 10))
 
 // Load existing class
 const { data: classList, error: classError } = await useAPI<ClassItem[]>('/class/fetch-classes');
@@ -88,6 +99,60 @@ watch(attendanceDate, () => {
     populateAbsentListFromExisting();
   }
 });
+
+// ─── For export ─
+function openExportModal() {
+    exportDialog.value = true
+}
+
+function closeExportModal() {
+    if (isExporting.value) return
+    exportDialog.value = false
+    setTimeout(() => resetState(), 300)
+}
+
+function resetState() {
+    isExporting.value = false
+}
+
+async function exportAttendance() {
+  if (!exportClassId.value || !exportDateFrom.value || !exportDateTo.value) return
+
+  try {
+    isExporting.value = true
+
+    const payload = {
+      class_ID: exportClassId.value,
+      date_from: exportDateFrom.value,
+      date_to: exportDateTo.value,
+    }
+
+    // Example API call (adjust to your backend)
+    const { data, error } = await useAPI<ExportResult>('/attendance/export', {
+      method: 'POST',
+      body: payload,
+    })
+
+    if (error.value) {
+        throw new Error(error.value?.data?.message ?? 'Failed to Export')
+    }
+
+    const downloadUrl = data.value?.download_url
+
+    if (downloadUrl) {
+      window.open(downloadUrl, '_blank')
+    } else {
+      throw new Error('Download URL not found')
+    }
+
+    closeExportModal()
+    
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isExporting.value = false
+  }
+}
 
 // ─── Populate absent list dari existing attendance (untuk tarikh yang dipilih) ─
 function populateAbsentListFromExisting() {
@@ -250,6 +315,78 @@ async function submitAttendance() {
   <div>
     <v-breadcrumbs :items="['Student absence']" />
 
+    <!-- Export Student Excel modal -->
+     <v-dialog v-model="exportDialog" max-width="600" persistent>
+      <v-card rounded="lg">
+
+        <!-- Header -->
+        <v-card-title class="d-flex align-center justify-space-between pa-5">
+          <div class="d-flex align-center gap-2">
+            <v-icon color="success" size="28">mdi-microsoft-excel</v-icon>
+            <span class="text-h6 font-weight-bold">Export Attendance</span>
+          </div>
+
+          <v-btn icon="mdi-close" variant="text" @click="closeExportModal" :disabled="isExporting" />
+        </v-card-title>
+
+        <v-divider />
+
+        <v-card-text class="pa-5">
+
+          <!-- Class Selection -->
+          <v-select
+            v-model="exportClassId" :items="classList ?? []"
+            :item-title="item => `${item.academic_year_level.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())} ${item.class_name}`"
+            item-value="id" label="Select Class" prepend-inner-icon="mdi-google-classroom"
+            variant="outlined" class="mb-4" clearable
+          />
+
+          <!-- Date From -->
+          <v-text-field
+            v-model="exportDateFrom" type="date" label="Date From"
+            prepend-inner-icon="mdi-calendar-start" variant="outlined"
+            class="mb-4"
+          />
+
+          <!-- Date To -->
+          <v-text-field
+            v-model="exportDateTo" type="date"
+            label="Date To" prepend-inner-icon="mdi-calendar-end"
+            variant="outlined"
+          />
+
+        </v-card-text>
+
+        <v-divider />
+
+        <!-- Actions -->
+        <v-card-actions class="pa-4">
+          <v-spacer />
+
+          <v-btn
+            variant="outlined"
+            color="grey"
+            @click="closeExportModal"
+            :disabled="isExporting"
+          >
+            Cancel
+          </v-btn>
+
+          <v-btn
+            color="success"
+            prepend-icon="mdi-file-excel"
+            @click="exportAttendance"
+            :loading="isExporting"
+            :disabled="!exportClassId || !exportDateFrom || !exportDateTo"
+          >
+            Export
+          </v-btn>
+
+        </v-card-actions>
+
+      </v-card>
+    </v-dialog>
+
     <v-card class="mb-4" rounded="lg" elevation="1">
       <v-card-title class="pa-3 cursor-pointer d-flex align-center justify-space-between"
         @click="showExport = !showExport">
@@ -265,7 +402,9 @@ async function submitAttendance() {
         <div v-if="showExport">
           <v-divider />
           <v-card-text>
-            <ColorsButtons :filter="['Export']" />
+              <v-btn color="success" prepend-icon="mdi-microsoft-excel" @click="openExportModal">
+                  Import
+              </v-btn>
           </v-card-text>
         </div>
       </v-expand-transition>

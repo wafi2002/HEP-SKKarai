@@ -6,11 +6,12 @@ import { TypeOrmModule } from '@nestjs/typeorm/dist';
 import { Class } from 'src/entities/Class.entity';
 import { StudentAcademic } from 'src/entities/StudentAcademic.entity';
 import { AttendanceSession } from 'src/entities/AttendanceSession';
+import { Student } from 'src/entities/Student.entity';
 
 
 @Module({
   imports: [
-      TypeOrmModule.forFeature([Class, StudentAttendance, StudentAcademic, AttendanceSession])
+      TypeOrmModule.forFeature([Class, StudentAttendance, StudentAcademic, AttendanceSession, Student])
     ],
   controllers: [AttendanceController],
   providers: [AttendanceService],
