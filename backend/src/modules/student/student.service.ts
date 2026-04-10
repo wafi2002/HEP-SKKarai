@@ -454,6 +454,18 @@ export class StudentService {
           if (row.orphan_status) studentData.orphan_status = row.orphan_status;
           if (row.account_bank_no) studentData.account_bank_no = row.account_bank_no;
           if (row.account_bank_name) studentData.account_bank_name = row.account_bank_name;
+          
+          if (row.class_name && row.academic_year_level) {
+            const classKey = makeClassKey(row.class_name, row.academic_year_level);
+            const classEntity = classMap.get(classKey);
+            if (classEntity) {
+              studentData.class = { id: classEntity.id };
+            } else {
+              console.warn(`⚠️ [Row ${rowNumber}] Class not found in map: ${classKey} - this should not happen!`);
+            }
+          } else if (row.class_name || row.academic_year_level) {
+            console.warn(`⚠️ [Row ${rowNumber}] Incomplete class data: class_name="${row.class_name}", year="${row.academic_year_level}"`);
+          }
 
           const student = queryRunner.manager.create(Student, studentData);
           await queryRunner.manager.save(Student, student);

@@ -22,7 +22,7 @@ export class StudentAcademic {
     @Column({ nullable: true })
     class_enrollment_date: Date;
 
-    @ManyToOne(() => Class, academic => academic.studentAcademics, { nullable: true })
+    @ManyToOne(() => Class, classes => classes.studentAcademics, { nullable: true })
     @JoinColumn({ name: 'class_ID' })
     class: Class;
 

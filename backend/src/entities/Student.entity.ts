@@ -74,6 +74,10 @@ export class Student {
 
     @OneToOne(() => Address, address => address.student)
     address: Address;
+
+    @ManyToOne(() => Class, (classEntity) => classEntity.students, { nullable: false })
+    @JoinColumn({ name: 'class_ID' })
+    class: Class;
     
     // Helper methods
     getPrimaryGuardian(): Parent | undefined {

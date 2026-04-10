@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from 'typeorm';
 import { StudentAcademic } from './StudentAcademic.entity';
+import { Student } from './Student.entity';
 
 @Entity('classes')
 @Index(['class_name', 'academic_year_level'], { unique: true }) // Prevent duplicate class names
@@ -33,4 +34,7 @@ export class Class {
 
     @OneToMany(() => StudentAcademic, academic => academic.class)
     studentAcademics: StudentAcademic[];
+
+    @OneToMany(() => Student, students => students.class)
+    students: Student[];
 }

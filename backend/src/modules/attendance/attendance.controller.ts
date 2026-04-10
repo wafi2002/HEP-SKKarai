@@ -26,12 +26,21 @@ export class AttendanceController {
   @Post('export')
   @HttpCode(HttpStatus.OK)
   async exportExcel(@Body() body: any) {
+    const { class_ID, date_from, date_to } = body
+    var message
     const fileUrl = await this.AttendanceService.exportExcel(body)
 
+    console.debug('[Result ExportExcel] download_url:', fileUrl)
+    
+    if(date_from == date_to){
+      message = `Successfully Export data for ${date_from}`
+    } else {
+      message = `Successfully Export data from ${date_from} to ${date_to}`
+    }
+
     return {
-      data: {
-        download_url: fileUrl,
-      },
+      download_url: fileUrl,
+      message: message,
     }
   }
 

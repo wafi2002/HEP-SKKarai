@@ -60,6 +60,9 @@ const isExporting = ref(false);
 const exportClassId = ref<string | null>(null)
 const exportDateFrom = ref<string>(new Date().toISOString().substring(0, 10))
 const exportDateTo = ref<string>(new Date().toISOString().substring(0, 10))
+const exportSuccess = ref(false)
+const exportMessage = ref<string | null>(null)
+  
 
 // Load existing class
 const { data: classList, error: classError } = await useAPI<ClassItem[]>('/class/fetch-classes');
@@ -107,12 +110,15 @@ function openExportModal() {
 
 function closeExportModal() {
     if (isExporting.value) return
+    
     exportDialog.value = false
     setTimeout(() => resetState(), 300)
 }
 
 function resetState() {
     isExporting.value = false
+    exportSuccess.value = false
+    exportMessage.value = ""
 }
 
 async function exportAttendance() {
@@ -120,6 +126,8 @@ async function exportAttendance() {
 
   try {
     isExporting.value = true
+    exportSuccess.value = false
+    exportMessage.value = ""
 
     const payload = {
       class_ID: exportClassId.value,
@@ -135,6 +143,12 @@ async function exportAttendance() {
 
     if (error.value) {
         throw new Error(error.value?.data?.message ?? 'Failed to Export')
+    }
+
+    if (data.value) {
+        exportSuccess.value = true
+        exportMessage.value = data.value?.message
+
     }
 
     const downloadUrl = data.value?.download_url
@@ -329,7 +343,11 @@ async function submitAttendance() {
           <v-btn icon="mdi-close" variant="text" @click="closeExportModal" :disabled="isExporting" />
         </v-card-title>
 
-        <v-divider />
+        
+        <!-- Success Message -->
+        <v-alert v-if="exportSuccess" type="success" variant="tonal" class="mt-4">
+          {{ exportMessage }}
+        </v-alert>
 
         <v-card-text class="pa-5">
 
@@ -403,7 +421,7 @@ async function submitAttendance() {
           <v-divider />
           <v-card-text>
               <v-btn color="success" prepend-icon="mdi-microsoft-excel" @click="openExportModal">
-                  Import
+                  Export
               </v-btn>
           </v-card-text>
         </div>

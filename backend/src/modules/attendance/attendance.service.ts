@@ -39,21 +39,13 @@ export class AttendanceService {
     // 1️⃣ Get students
     const students = await this.studentRepository
       .createQueryBuilder('student')
-      .innerJoin(
-        'student_academics',
-        'academic',
-        'academic.student_ID = student.student_ID AND academic.class_ID = :class_ID',
-        { class_ID },
-      )
-      .innerJoin(
-        'academic.class',
-        'class'
-      )
+      .innerJoin('student.class', 'class')
+      .where('class.id = :class_ID', { class_ID })
       .addSelect([
         'class.academic_year_level',
         'class.class_name',
       ])
-      .getRawMany()
+      .getMany()
 
     // 2️⃣ Get absences
     const absences = await this.attendanceRepository
@@ -91,36 +83,76 @@ export class AttendanceService {
     for (const date of dates) {
       const sheet = workbook.addWorksheet(date)
 
-      // Header
-      sheet.addRow(['Name', 'IC', 'Student ID', 'Students Class', 'Attendance Status', 'Reason'])
+      // ── 1. Define columns with widths ──────────────────────────
+      sheet.columns = [
+        { header: 'Name',              key: 'name',      width: 75 },
+        { header: 'IC',                key: 'ic',        width: 20 },
+        { header: 'Student ID',        key: 'studentId', width: 20 },
+        { header: 'Students Class',    key: 'className', width: 25 },
+        { header: 'Attendance Status', key: 'status',    width: 20 },
+        { header: 'Reason',            key: 'reason',    width: 50 },
+      ]
 
-      // Fill rows
-      students.forEach(student => {
-        const key = `${date}_${student.student_student_ID}`
-        const absence = absenceMap.get(key)
-
-        const className =
-          student.class_academic_year_level + ' ' + student.class_class_name
-
-        if (absence) {
-          sheet.addRow([
-            student.student_name,
-            student.student_ic,
-            student.student_student_ID,
-            className,
-            'Absent',
-            absence.reason || '-',
-          ])
-        } else {
-          sheet.addRow([
-            student.student_name,
-            student.student_ic,
-            student.student_student_ID,
-            className,
-            'Present',
-            '-',
-          ])
+      // ── 2. Style the header row ────────────────────────────────
+      const headerRow = sheet.getRow(1)
+      headerRow.eachCell(cell => {
+        cell.font      = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Arial', size: 11 }
+        cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F5496' } }
+        cell.alignment = { vertical: 'middle', horizontal: 'center' }
+        cell.border    = {
+          top:    { style: 'thin' }, bottom: { style: 'thin' },
+          left:   { style: 'thin' }, right:  { style: 'thin' },
         }
+      })
+      headerRow.height = 20
+
+      // ── 3. Freeze the header row ───────────────────────────────
+      sheet.views = [{ state: 'frozen', ySplit: 1 }]
+
+      // ── 4. Fill data rows ──────────────────────────────────────
+      students.forEach(student => {
+        const key     = `${date}_${student.student_ID}`
+        const absence = absenceMap.get(key)
+        const className = `${student.class.academic_year_level} ${student.class.class_name}`
+        const isAbsent  = !!absence
+
+        const row = sheet.addRow({
+          name:      student.name,
+          ic:        student.ic,
+          studentId: student.student_ID,
+          className,
+          status:    isAbsent ? 'Absent' : 'Present',
+          reason:    absence?.reason || '-',
+        })
+
+        // Color: light red for Absent, light green for Present
+        const rowColor = isAbsent ? 'FFFFC7CE' : 'FFC6EFCE'
+        const textColor = isAbsent ? 'FF9C0006' : 'FF276221'
+
+        row.eachCell(cell => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor } }
+          cell.font = { name: 'Arial', size: 10, color: { argb: textColor } }
+          cell.border = {
+            top:    { style: 'thin', color: { argb: 'FFD3D3D3' } },
+            bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+            left:   { style: 'thin', color: { argb: 'FFD3D3D3' } },
+            right:  { style: 'thin', color: { argb: 'FFD3D3D3' } },
+          }
+          cell.alignment = { vertical: 'middle' }
+        })
+
+        row.height = 18
+      })
+
+      // ── 5. Add a summary row at the bottom ────────────────────
+      const totalRows  = students.length
+      const absentCount  = students.filter(s => absenceMap.has(`${date}_${s.student_ID}`)).length
+      const presentCount = totalRows - absentCount
+
+      sheet.addRow([]) // blank spacer
+      const summaryRow = sheet.addRow(['', '', '', `Total: ${totalRows}`, `Absent: ${absentCount}  Present: ${presentCount}`, ''])
+      summaryRow.eachCell(cell => {
+        cell.font = { bold: true, name: 'Arial', size: 10 }
       })
     }
 
@@ -138,9 +170,7 @@ export class AttendanceService {
     console.debug('[EXPORT EXCEL] download_url:', `${process.env.BASE_URL}/uploads/${fileName}`)
 
     // 8️⃣ Return URL
-    return {
-      download_url: `${process.env.BASE_URL}/uploads/${fileName}`
-    }
+    return `${process.env.BASE_URL}/uploads/${fileName}`
   }
   
   async create(dto: CreateAttendanceDto, teacherId: string) {
