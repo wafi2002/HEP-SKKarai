@@ -195,13 +195,6 @@ async function loadItems(options?: FetchOptions) {
     }
 }
 
-function openCreateModal() {
-    //   selectedStudentId.value = null;
-    //   selectedReason.value = '';
-    //   noteField.value = '';
-    openModal.value = true;
-}
-
 function viewStudent(student_ID: string) {
     navigateTo(`/data-murid/pelajar/${student_ID}`);
 }
@@ -672,7 +665,7 @@ function formatFileSize(bytes) {
                                             <td style="padding: 8px 12px; font-size: 12px;">{{ err.row }}</td>
                                             <td style="padding: 8px 12px; font-size: 12px;">{{ err.studentId }}</td>
                                             <td style="padding: 8px 12px; font-size: 12px; color: #dc2626;">{{ err.error
-                                            }}</td>
+                                                }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -703,7 +696,7 @@ function formatFileSize(bytes) {
                 <v-btn color="success" prepend-icon="mdi-microsoft-excel" @click="openImportModal">
                     Import
                 </v-btn>
-                <v-btn color="primary" prepend-icon="mdi-account-plus" @click="openCreateModal">
+                <v-btn color="primary" prepend-icon="mdi-account-plus" :to="'data-murid/create-student'">
                     Add Student
                 </v-btn>
             </div>

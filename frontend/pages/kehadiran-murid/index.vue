@@ -158,7 +158,6 @@ const availableStudents = computed(() => {
   const result = studentsInClass.value?.filter(
     s => !absentList.value.some(a => a.student_ID === s.student_ID)
   );
-  console.log('availableStudents sample:', result?.[0]); // tengok structure
   return result;
 });
 
