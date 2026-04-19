@@ -39,8 +39,8 @@ export class TeachingSchedule {
     end_time: Date;
 
     // Period to take attendance
-    @Column({ type: 'boolean', default: false })
-    is_class_period: boolean;
+    @Column({ nullable: true })
+    subject: String;
 
     @CreateDateColumn({ type: 'timestamp' })    
     created_at: Date;
