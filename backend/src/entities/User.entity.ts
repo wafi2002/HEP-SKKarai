@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { UserGroup } from './UserGroup.entity';
 
 @Entity('users')
 export class User {
@@ -19,4 +20,11 @@ export class User {
 
     @Column()
     role: string;
+
+    @Column({ nullable: true })
+    user_group_id: string;
+
+    @ManyToOne(() => UserGroup, { nullable: true, eager: true })
+    @JoinColumn({ name: 'user_group_id' })
+    userGroup: UserGroup;
 }

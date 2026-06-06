@@ -64,7 +64,8 @@ import {
   UserShieldIcon,
   ZoomCodeIcon,
   UserXIcon,
-  ListIcon
+  ListIcon,
+  UsersGroupIcon
 } from "vue-tabler-icons";
 export interface menu {
   header?: string;
@@ -112,6 +113,12 @@ const sidebarItem: menu[] = [
     title: "Student Absence",
     icon: UserXIcon,
     to: "/attendance",
+    external: false,
+  },
+  {
+    title: "User Group",
+    icon: UsersGroupIcon,
+    to: "/user-group",
     external: false,
   },
   { header: "Analisis" },

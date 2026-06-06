@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { TeacherService } from '../teacher/teacher.service';
 
 type AuthInput = {username: string, password: string}
-type SignInData = {id: string, teacherId?: string, name:string, username: string, role:string}
+type SignInData = {id: string, teacherId?: string, name:string, username: string, role:string, user_group_id?: string}
 type AuthResult = {accessToken: string, id: string, username: string, role: string}
 
 type TokenPayload = {
@@ -13,6 +13,7 @@ type TokenPayload = {
     name: string;
     username: string;
     role: string;
+    user_group_id?: string;
     teacherId?: string;  // Optional
     studentId?: string;  // Optional (kalau nak tambah student kemudian)
 }
@@ -49,10 +50,11 @@ export class AuthService {
         }
 
         const signInData: SignInData = {
-            id: user.id, 
-            name: user.name, 
-            username: user.username, 
-            role: user.role
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            role: user.role,
+            user_group_id: user.user_group_id ?? undefined,
         };
 
         if(user.role === 'Teacher'){
@@ -66,11 +68,12 @@ export class AuthService {
     }
 
     async signIn(user: SignInData): Promise<AuthResult>{
-        const tokenPayload: TokenPayload ={
+        const tokenPayload: TokenPayload = {
             sub: user.id,
             name: user.name,
             username: user.username,
-            role: user.role
+            role: user.role,
+            user_group_id: user.user_group_id,
         };
 
         if (user.teacherId) {

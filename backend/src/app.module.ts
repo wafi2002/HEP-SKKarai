@@ -10,6 +10,8 @@ import { ParentModule } from './modules/parent/parent.module';
 import { TeacherModule } from './modules/teacher/teacher.module';
 import { ClassModule } from './modules/class/class.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { UserGroupModule } from './modules/user-group/user-group.module';
+import { FunctionModule } from './modules/function/function.module';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
       }),
       inject: [ConfigService],
     }),
-    UsersModule, AuthModule, StudentModule, ParentModule, TeacherModule, ClassModule, AttendanceModule],
+    UsersModule, AuthModule, StudentModule, ParentModule, TeacherModule, ClassModule, AttendanceModule, UserGroupModule, FunctionModule],
   controllers: [AppController],
   providers: [AppService],
 })

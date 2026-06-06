@@ -1,29 +1,35 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  UseInterceptors, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
   UploadedFile,
   BadRequestException,
   HttpStatus,
   HttpCode,
-  Query
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentService } from './student.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { QueryStudentsDto } from './dto/query-students.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions/permissions.guard';
+import { RequirePermission } from '../auth/decorator/permissions/permissions.decorator';
 
 @Controller('student')
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('Student Management', 'Create')
   create(@Body() createStudentDto: CreateStudentDto) {
     return this.studentService.create(createStudentDto);
   }
@@ -63,21 +69,29 @@ export class StudentController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('Student Management', 'View')
   async findAll(@Query() queryDto: QueryStudentsDto) {
     return await this.studentService.findAll(queryDto);
   }
 
-  @Get(':student_ID')  // ✅ Tukar param name dari :id ke :student_ID
+  @Get(':student_ID')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('Student Management', 'View')
   async getStudentDetails(@Param('student_ID') student_ID: string) {
     return this.studentService.getStudentDetails(student_ID);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('Student Management', 'Edit')
   update(@Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
     return this.studentService.update(+id, updateStudentDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('Student Management', 'Delete')
   remove(@Param('id') id: string) {
     return this.studentService.remove(+id);
   }
